@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-background: #373A3F;
+  --color-foreground: #BABABA;
+  --color-primary: #7F5977;
+  --color-peach: #EED0BB;
+  --color-navy: #2F3547;
 }
 
 @theme inline {
