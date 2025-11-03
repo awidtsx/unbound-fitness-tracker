@@ -13,7 +13,7 @@ export default function Home() {
 
       if (data.session) {
         //  User is logged in
-        router.push("/dashboard/profile");
+        router.push("/dashboard");
       } else {
         //  No session, go to login
         router.push("/login");

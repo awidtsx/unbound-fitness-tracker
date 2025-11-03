@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation';
 import Header from '../../components/Header'
 
 export default function WorkoutDetail() {
+  const router = useRouter();
   const { id } = useParams() // get the workout routine id from the URL
   const [routine, setRoutine] = useState<any>(null)
   const [exercises, setExercises] = useState<any[]>([])
@@ -16,6 +18,22 @@ export default function WorkoutDetail() {
   const [reps, setReps] = useState('')
   const [weight, setWeight] = useState('')
   const [loading, setLoading] = useState(true)
+
+
+  useEffect(() => {
+    async function checkSesh() {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        router.push("/login");
+        return;
+      }
+
+      
+    }
+
+    checkSesh();
+  }, [router]);
+
 
   // ✅ Fetch routine and exercises
   useEffect(() => {

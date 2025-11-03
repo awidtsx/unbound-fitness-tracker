@@ -3,14 +3,31 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation';
 import Header from '../../../components/Header'
 
 export default function FollowedWorkoutDetail() {
+  const router = useRouter();
   const { id } = useParams() // workout_routine id
   const [routine, setRoutine] = useState<any>(null)
   const [exercises, setExercises] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+
+useEffect(() => {
+    async function checkSesh() {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        router.push("/login");
+        return;
+      }
+
+      
+    }
+
+    checkSesh();
+  }, [router]);
+
 
   useEffect(() => {
     getUser()
@@ -21,8 +38,12 @@ export default function FollowedWorkoutDetail() {
   }, [id, userId])
 
   async function getUser() {
-    const { data } = await supabase.auth.getUser()
+    const { data} = await supabase.auth.getUser()
+
+
     if (data?.user) setUserId(data.user.id)
+
+      
   }
 
   async function fetchRoutine() {

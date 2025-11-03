@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 import Header from "../components/Header";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -17,9 +19,15 @@ export default function DashboardPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // Fetch user and profile
+
   useEffect(() => {
     async function fetchProfile() {
       setLoading(true);
+      const { data: userData } = await supabase.auth.getUser();
+            if (!userData.user) {
+              router.push("/login");
+              return;
+            }
 
       const {
         data: { user },

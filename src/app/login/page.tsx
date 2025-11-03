@@ -37,43 +37,61 @@ export default function LoginPage() {
   const checkSession = async () => {
     const { data } = await supabase.auth.getSession()
     if (data.session) {
-      router.push('/dashboard/profile')
+      router.push('/dashboard')
     }
   }
   checkSession()
 }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
+  e.preventDefault()
+  setError(null)
 
-    try {
-      let result
-      if (isLogin) {
-        result = await supabase.auth.signInWithPassword({ email, password })
-      } else {
-        result = await supabase.auth.signUp({ email, password })
-        const userId = result.data.user?.id
-        if (userId) {
-          const { error: profileError } = await supabase.from("Profile").insert([
-            {
-              user_id: userId,
-              first_name: firstName,
-              last_name: lastName,
-              weight: parseFloat(weight),
-              height: parseFloat(height),
-              goal: goal,
-            },
-          ])
-          if (profileError) throw profileError
-        }
-      }
+  try {
+    let result
+
+    if (isLogin) {
+      // LOGIN flow
+      result = await supabase.auth.signInWithPassword({ email, password })
+
       if (result.error) throw result.error
-      router.push("/dashboard")
-    } catch (err: any) {
-      setError(err.message)
+      router.push('/dashboard') // or '/profile', depending on your route
+    } else {
+      // SIGN UP flow 
+      result = await supabase.auth.signUp({
+        email,
+        password,
+      })
+
+      if (result.error) throw result.error
+
+      // If sign-up succeeds, insert profile data
+      const userId = result.data.user?.id
+      if (userId) {
+        const { error: profileError } = await supabase.from('Profile').insert([
+          {
+            user_id: userId,
+            first_name: firstName,
+            last_name: lastName,
+            weight: parseFloat(weight),
+            height: parseFloat(height),
+            goal: goal,
+          },
+        ])
+        if (profileError) throw profileError
+      }
+
+      // Show confirmation message and redirect
+      alert(
+        'A confirmation email has been sent. Please verify your email before logging in.'
+      )
+      router.push('/login')
     }
+  } catch (err: any) {
+    setError(err.message)
   }
+}
+
 
   return (
     <main className="flex min-h-screen bg-emerald-50 text-gray-800">
