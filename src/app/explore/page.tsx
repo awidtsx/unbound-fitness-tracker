@@ -6,92 +6,159 @@ import { useRouter } from "next/navigation";
 import Header from "../components/Header";
 
 export default function ExplorePage() {
-    const router = useRouter();
-    const [loading, setLoading] = useState(true)
-    const [workouts, setWorkouts] = useState<any[]>([])
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [workouts, setWorkouts] = useState<any[]>([]);
+  const [profileId, setProfileId] = useState<number | null>(null);
 
-    useEffect(() => {
+  
+
+
+
+  useEffect(() => {
     async function fetchWorkouts() {
-    setLoading(true)
-        const { data: userData } = await supabase.auth.getUser();
-              if (!userData.user) {
-                router.push("/login");
-                return;
-              }
+      setLoading(true);
 
-    const { data: profileData } = await supabase
-  .from("Profile")
-  .select("id")
-  .eq("user_id", userData.user.id)
-  .single();
+      // Check user session
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        router.push("/login");
+        return;
+      }
 
-if (!profileData) return;
-const profileId = profileData.id;
+      // Get profile ID
+      const { data: profileData } = await supabase
+        .from("Profile")
+        .select("id")
+        .eq("user_id", userData.user.id)
+        .single();
 
-// Step 3 — Get all followed routine IDs
-const { data: followed } = await supabase
-  .from("routine_followers")
-  .select("routine_id")
-  .eq("follower_id", profileId);
+      if (!profileData) return;
+      setProfileId(profileData.id);
 
-const followedIds = followed?.map((f) => f.routine_id) || [];    
+      // Get routines already followed by this user
+      const { data: followed } = await supabase
+        .from("routine_followers")
+        .select("routine_id")
+        .eq("follower_id", profileData.id);
 
+      const followedIds = followed?.map((f) => f.routine_id) || [];
+
+      // Fetch all workout routines excluding user's and followed ones
       const { data, error } = await supabase
-        .from("WorkoutRoutine")
-        .select("id, name, description")
-        .neq("profile_id", profileId)
+        .from("workout_routines_with_followers")
+        .select(
+          "id, name, description, profile_id, first_name, follower_count, date_updated"
+        )
+        .neq("profile_id", profileData.id)
         .not("id", "in", `(${followedIds.join(",") || 0})`)
-        .order("date_updated", { ascending: false })
-      if (error) console.error(error)
-      else setWorkouts(data || [])
-    setLoading(false)
+        .order("follower_count", { ascending: false })
+        .order("date_updated", { ascending: false });
+
+      if (error) console.error(error);
+      else {
+        // mark which routines are already followed
+        const updated = data.map((routine) => ({
+          ...routine,
+          isFollowed: false,
+        }));
+        setWorkouts(updated);
+      }
+
+      setLoading(false);
     }
-    fetchWorkouts()
 
-  }, [router])
+    fetchWorkouts();
+  }, [router]);
 
-return (
+  // Handle follow action
+  async function handleFollow(routineId: number) {
+    if (!profileId) return;
+
+    const routineIndex = workouts.findIndex((r) => r.id === routineId);
+    if (routineIndex === -1) return;
+
+    const { error } = await supabase.from("routine_followers").insert([
+      {
+        follower_id: profileId,
+        routine_id: routineId,
+      },
+    ]);
+
+    if (error) {
+      console.error(error);
+      alert("Something went wrong following this routine.");
+      return;
+    }
+
+    // ✅ Instantly update UI (increment follower count and disable button)
+    const updated = [...workouts];
+    updated[routineIndex].follower_count += 1;
+    updated[routineIndex].isFollowed = true;
+    setWorkouts(updated);
+  }
+
+  return (
     <main className="min-h-screen bg-gray-900 text-gray-300">
       <Header />
       <section className="max-w-3xl mx-auto mt-10 bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-purple-900">
-            Explore
-          </h1>
+          <h1 className="text-3xl font-bold text-purple-900">Explore</h1>
         </div>
 
         {loading ? (
           <p>Loading...</p>
         ) : (
-          <>
-
-            {/* Exercises List */}
-            <div className="space-y-4 mb-10">
-              {workouts.length > 0 ? (
-                workouts.map((workouts) => (
-                  <div
-                    key={workouts.id}
-                    className="flex justify-between items-center border border-emerald-50 rounded-lg p-4"
-                  >
-                    <div>
-                      <h3 className="text-lg font-semibold text-purple-900">
-                        {workouts.name}
-                      </h3>
-                      <p className="text-sm text-gray-400">{workouts.description}</p>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      
-                    </div>
+          <div className="space-y-4 mb-10">
+            {workouts.length > 0 ? (
+              workouts.map((routine) => (
+                <div
+                  key={routine.id}
+                  className="flex justify-between items-center border border-emerald-50 rounded-lg p-4 hover:bg-emerald-50 transition cursor-pointer"
+                  onClick={() =>
+                    router.push(`explore/${routine.id}`)
+                  }
+                >
+                  <div>
+                    <h3 className="text-lg font-semibold text-purple-900">
+                      {routine.name}
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      {routine.description}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Created by: {routine.first_name || "Unknown"}
+                    </p>
                   </div>
-                ))
-              ) : (
-                <p className="text-gray-400">No exercises found.</p>
-              )}
-            </div>
-          </>
+
+                  <div className="flex flex-col items-end space-y-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent redirect
+                        handleFollow(routine.id);
+                      }}
+                      disabled={routine.isFollowed}
+                      className={`px-4 py-2 rounded transition ${
+                        routine.isFollowed
+                          ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                          : "bg-[#7F5977] text-white hover:bg-[#EED0BB] hover:text-gray-800"
+                      }`}
+                    >
+                      {routine.isFollowed ? "Followed" : "Follow"}
+                    </button>
+                    <span className="text-xs text-gray-500">
+                      {routine.follower_count} follower
+                      {routine.follower_count === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400">No workout routines available.</p>
+            )}
+          </div>
         )}
       </section>
-      </main>
-)
-
+    </main>
+  );
 }

@@ -34,14 +34,7 @@ export default function WorkoutDetail() {
     checkSesh();
   }, [router]);
 
-
-  // ✅ Fetch routine and exercises
-  useEffect(() => {
-    if (!id) return
-    fetchRoutine()
-  }, [id])
-
-  async function fetchRoutine() {
+async function fetchRoutine() {
     setLoading(true)
 
     const { data: routineData, error: routineError } = await supabase
@@ -64,8 +57,16 @@ export default function WorkoutDetail() {
     setExercises(exerciseData || [])
     setLoading(false)
   }
+  
+  //  Fetch routine and exercises
+  useEffect(() => {
+    if (!id) return
+    fetchRoutine()
+  }, [id])
 
-  // ✅ Update exercise values
+  
+
+  //  Update exercise values
   async function handleUpdate(exerciseId: number, field: string, value: any) {
     const { error } = await supabase
       .from('Exercises')

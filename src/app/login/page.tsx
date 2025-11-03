@@ -21,9 +21,11 @@ export default function LoginPage() {
   // Fetch top workouts
   useEffect(() => {
     async function fetchWorkouts() {
+      
       const { data, error } = await supabase
-        .from("WorkoutRoutine")
+        .from("workout_routines_with_followers")
         .select("id, name, description")
+        .order("follower_count", { ascending: false })
         .order("date_updated", { ascending: false })
         .limit(5)
       if (error) console.error(error)
