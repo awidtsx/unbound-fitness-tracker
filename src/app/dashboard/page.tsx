@@ -11,42 +11,27 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-    // Editable fields
+  // Editable fields
   const [newPassword, setNewPassword] = useState("");
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
   const [goal, setGoal] = useState("");
+  const [goalWeight, setGoalWeight] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
-  // Fetch user and profile
 
   useEffect(() => {
     async function fetchProfile() {
       setLoading(true);
       const { data: userData } = await supabase.auth.getUser();
-            if (!userData.user) {
-              router.push("/login");
-              return;
-            }
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        console.error(userError);
-        setLoading(false);
+      if (!userData.user) {
+        router.push("/login");
         return;
       }
 
-      setUser(user);
-
-      // Get profile data
       const { data: profileData, error: profileError } = await supabase
         .from("Profile")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userData.user.id)
         .single();
 
       if (profileError) {
@@ -56,35 +41,40 @@ export default function DashboardPage() {
         setWeight(profileData.weight || "");
         setHeight(profileData.height || "");
         setGoal(profileData.goal || "");
+        setGoalWeight(profileData.goal_weight || "");
       }
 
+      setUser(userData.user);
       setLoading(false);
     }
 
     fetchProfile();
-  }, []);
+  }, [router]);
 
-  // Update profile
+  // 🧠 Update Profile
   async function handleUpdateProfile(e: React.FormEvent) {
     e.preventDefault();
     setStatusMessage(null);
 
     if (!user) return;
 
+    const updatedProfile: any = {
+      weight: parseFloat(weight),
+      height: parseFloat(height),
+      goal,
+      goal_weight: goal === "maintain" ? null : parseFloat(goalWeight),
+    };
+
     const { error } = await supabase
       .from("Profile")
-      .update({
-        weight: parseFloat(weight),
-        height: parseFloat(height),
-        goal,
-      })
+      .update(updatedProfile)
       .eq("user_id", user.id);
 
     if (error) setStatusMessage("❌ Failed to update profile");
     else setStatusMessage("✅ Profile updated successfully!");
   }
 
-  // Change password
+  // 🔐 Change Password
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     setStatusMessage(null);
@@ -171,6 +161,22 @@ export default function DashboardPage() {
                   <option value="maintain">Maintain</option>
                 </select>
               </div>
+
+              {/* 👇 Goal Weight (only if goal ≠ maintain) */}
+              {goal !== "maintain" && (
+                <div>
+                  <label className="block text-sm font-medium text-[#EED0BB] mb-1">
+                    Goal Weight (kg)
+                  </label>
+                  <input
+                    type="number"
+                    value={goalWeight}
+                    onChange={(e) => setGoalWeight(e.target.value)}
+                    className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-gray-100 focus:border-purple-400 focus:outline-none"
+                    placeholder="Enter your target weight"
+                  />
+                </div>
+              )}
 
               <button
                 type="submit"

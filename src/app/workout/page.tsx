@@ -51,7 +51,6 @@ export default function WorkoutRoutinePage() {
         .eq("follower_id", profile.id)
         .order("routine_id", { ascending: false });
 
-      // Flatten nested data
       const formattedFollowed = followedData?.map((f) => f.WorkoutRoutine) || [];
       setFollowedRoutines(formattedFollowed);
 
@@ -105,6 +104,27 @@ export default function WorkoutRoutinePage() {
     setFollowedRoutines(followedData?.map((f) => f.WorkoutRoutine) || []);
   }
 
+  // Unfollow function
+  async function handleUnfollow(routineId: number) {
+    if (!profileId) return;
+
+    const { error } = await supabase
+      .from("routine_followers")
+      .delete()
+      .eq("routine_id", routineId)
+      .eq("follower_id", profileId);
+
+    if (error) {
+      console.error("Unfollow error:", error);
+      return;
+    }
+
+    // Instantly update the UI
+    setFollowedRoutines((prev) =>
+      prev.filter((r) => r.id !== routineId)
+    );
+  }
+
   async function handleDelete(id: number) {
     if (!confirm("Are you sure you want to delete this routine?")) return;
     await supabase.from("WorkoutRoutine").delete().eq("id", id);
@@ -139,10 +159,7 @@ export default function WorkoutRoutinePage() {
                   <li
                     key={routine.id}
                     className="flex justify-between items-center border border-emerald-50 rounded-lg px-4 py-3 hover:bg-emerald-50 transition cursor-pointer"
-                    onClick={() =>
-                      router.push(`/workout/${routine.id}`)
-                      
-                    }
+                    onClick={() => router.push(`/workout/${routine.id}`)}
                   >
                     <div>
                       <h3 className="text-lg font-semibold text-purple-900">
@@ -187,8 +204,8 @@ export default function WorkoutRoutinePage() {
           <div className="bg-gray-800 rounded-2xl shadow-md p-6 flex flex-col h-full">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold text-purple-900">
-              Followed Routines
-            </h1>
+                Followed Routines
+              </h1>
             </div>
 
             {loading ? (
@@ -198,22 +215,33 @@ export default function WorkoutRoutinePage() {
                 {followedRoutines.map((routine) => (
                   <li
                     key={routine.id}
-                    className="border border-emerald-50 rounded-lg px-4 py-3 hover:bg-emerald-50 transition cursor-pointer"
-                    onClick={() =>
-                      router.push(`/workout/followed/${routine.id}`)
-                    }
+                    className="flex justify-between items-center border border-emerald-50 rounded-lg px-4 py-3 hover:bg-emerald-50 transition cursor-pointer"
+                    onClick={() => router.push(`/workout/followed/${routine.id}`)}
                   >
-                    <h3 className="text-lg font-semibold text-purple-900">
-                      {routine.name}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {routine.description}
-                    </p>
+                    <div>
+                      <h3 className="text-lg font-semibold text-purple-900">
+                        {routine.name}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {routine.description}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUnfollow(routine.id);
+                      }}
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition text-sm"
+                    >
+                      Unfollow
+                    </button>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">You are not following any routines yet.</p>
+              <p className="text-gray-500">
+                You are not following any routines yet.
+              </p>
             )}
           </div>
         </div>

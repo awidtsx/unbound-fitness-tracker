@@ -17,11 +17,11 @@ export default function LoginPage() {
   const [weight, setWeight] = useState("")
   const [height, setHeight] = useState("")
   const [goal, setGoal] = useState("weight_loss")
+  const [goalWeight, setGoalWeight] = useState("") // ✅ new state
 
   // Fetch top workouts
   useEffect(() => {
     async function fetchWorkouts() {
-      
       const { data, error } = await supabase
         .from("workout_routines_with_followers")
         .select("id, name, description")
@@ -34,66 +34,65 @@ export default function LoginPage() {
     fetchWorkouts()
   }, [])
 
-
+  // Check if user already logged in
   useEffect(() => {
-  const checkSession = async () => {
-    const { data } = await supabase.auth.getSession()
-    if (data.session) {
-      router.push('/dashboard')
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (data.session) {
+        router.push("/dashboard")
+      }
     }
-  }
-  checkSession()
-}, [router])
+    checkSession()
+  }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault()
-  setError(null)
+    e.preventDefault()
+    setError(null)
 
-  try {
-    let result
+    try {
+      let result
 
-    if (isLogin) {
-      // LOGIN flow
-      result = await supabase.auth.signInWithPassword({ email, password })
+      if (isLogin) {
+        // LOGIN flow
+        result = await supabase.auth.signInWithPassword({ email, password })
 
-      if (result.error) throw result.error
-      router.push('/dashboard') // or '/profile', depending on your route
-    } else {
-      // SIGN UP flow 
-      result = await supabase.auth.signUp({
-        email,
-        password,
-      })
+        if (result.error) throw result.error
+        router.push("/dashboard")
+      } else {
+        // SIGN UP flow
+        result = await supabase.auth.signUp({ email, password })
 
-      if (result.error) throw result.error
+        if (result.error) throw result.error
 
-      // If sign-up succeeds, insert profile data
-      const userId = result.data.user?.id
-      if (userId) {
-        const { error: profileError } = await supabase.from('Profile').insert([
-          {
-            user_id: userId,
-            first_name: firstName,
-            last_name: lastName,
-            weight: parseFloat(weight),
-            height: parseFloat(height),
-            goal: goal,
-          },
-        ])
-        if (profileError) throw profileError
+        // If sign-up succeeds, insert profile data
+        const userId = result.data.user?.id
+        if (userId) {
+          const { error: profileError } = await supabase.from("Profile").insert([
+            {
+              user_id: userId,
+              first_name: firstName,
+              last_name: lastName,
+              weight: parseFloat(weight),
+              height: parseFloat(height),
+              goal: goal,
+              goal_weight:
+                goal === "maintain" || goalWeight === ""
+                  ? null
+                  : parseFloat(goalWeight), // ✅ conditional insert
+            },
+          ])
+          if (profileError) throw profileError
+        }
+
+        alert(
+          "A confirmation email has been sent. Please verify your email before logging in."
+        )
+        router.push("/login")
       }
-
-      // Show confirmation message and redirect
-      alert(
-        'A confirmation email has been sent. Please verify your email before logging in.'
-      )
-      router.push('/login')
+    } catch (err: any) {
+      setError(err.message)
     }
-  } catch (err: any) {
-    setError(err.message)
   }
-}
-
 
   return (
     <main className="flex min-h-screen bg-emerald-50 text-gray-800">
@@ -121,9 +120,7 @@ export default function LoginPage() {
 
       {/* Right Side */}
       <section className="w-1/2 flex flex-col justify-center bg-gray-800 text-[#BABABA] px-20">
-        <h1 className="text-4xl font-bold mb-2 text-purple-900">
-          UNBOUND
-        </h1>
+        <h1 className="text-4xl font-bold mb-2 text-purple-900">UNBOUND</h1>
         <h2 className="text-2xl font-bold mb-2 text-[#EED0BB]">
           {isLogin ? "Login" : "Create Account"}
         </h2>
@@ -165,6 +162,7 @@ export default function LoginPage() {
                 onChange={(e) => setLastName(e.target.value)}
                 required
               />
+
               <div className="flex space-x-3">
                 <input
                   type="number"
@@ -194,6 +192,19 @@ export default function LoginPage() {
                 <option value="muscle_gain">Muscle Gain</option>
                 <option value="maintain">Maintain</option>
               </select>
+
+              {/* ✅ Conditional Goal Weight input */}
+              {(goal === "weight_loss" || goal === "muscle_gain") && (
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Goal Weight (kg)"
+                  className="w-full p-3 border border-[#7F5977] bg-transparent rounded focus:ring-2 focus:ring-[#EED0BB]"
+                  value={goalWeight}
+                  onChange={(e) => setGoalWeight(e.target.value)}
+                  required
+                />
+              )}
             </>
           )}
 
@@ -210,7 +221,9 @@ export default function LoginPage() {
             onClick={() => setIsLogin(!isLogin)}
             className="text-sm text-center mt-3 text-[#EED0BB] cursor-pointer hover:underline"
           >
-            {isLogin ? "Need an account? Sign up" : "Already have an account? Log in"}
+            {isLogin
+              ? "Need an account? Sign up"
+              : "Already have an account? Log in"}
           </p>
         </form>
       </section>
