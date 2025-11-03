@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
+import { calculateAndUpsertMealplan } from "@/lib/calculateAndUpsertMealplan";
+
 
 export default function LoginPage() {
   const router = useRouter()
@@ -67,7 +69,7 @@ export default function LoginPage() {
         // If sign-up succeeds, insert profile data
         const userId = result.data.user?.id
         if (userId) {
-          const { error: profileError } = await supabase.from("Profile").insert([
+          const { data: profileData, error: profileError } = await supabase.from("Profile").insert([
             {
               user_id: userId,
               first_name: firstName,
@@ -81,8 +83,25 @@ export default function LoginPage() {
                   : parseFloat(goalWeight), // ✅ conditional insert
             },
           ])
-          if (profileError) throw profileError
+          .select()
+      .single();
+
+      const profileId = profileData.id;
+        await calculateAndUpsertMealplan({
+      profile_id: profileId,
+      weight: parseFloat(weight),
+      height: parseFloat(height),
+      goal: goal as "weight_loss" | "muscle_gain" | "maintain",
+      goal_weight:
+        goal === "maintain" || goalWeight === ""
+          ? null
+          : parseFloat(goalWeight),
+    });
+    
+          if (profileError) throw profileError;
         }
+         
+
 
         alert(
           "A confirmation email has been sent. Please verify your email before logging in."

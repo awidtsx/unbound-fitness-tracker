@@ -57,7 +57,7 @@ async function fetchRoutine() {
     setExercises(exerciseData || [])
     setLoading(false)
   }
-  
+
   //  Fetch routine and exercises
   useEffect(() => {
     if (!id) return
@@ -121,7 +121,7 @@ async function fetchRoutine() {
 
       <section className="max-w-3xl mx-auto mt-10 bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-4xl font-bold text-purple-900">Exercises</h1>
+          <h1 className="text-3xl font-bold text-purple-900">{routine?.name}</h1>
           <button
             onClick={() => setShowModal(true)}
             className="bg-[#7F5977] text-white px-4 py-2 rounded hover:bg-[#EED0BB] hover:text-gray-800 transition"
@@ -134,9 +134,7 @@ async function fetchRoutine() {
           <p>Loading...</p>
         ) : (
           <>
-            <h1 className="text-3xl font-bold text-purple-900 mb-2">
-              {routine?.name}
-            </h1>
+            
             <p className="text-gray-400 mb-6">{routine?.description}</p>
 
             {/* Exercise List */}

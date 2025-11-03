@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Header from "../components/Header";
+import { calculateAndUpsertMealplan } from "@/lib/calculateAndUpsertMealplan";
+
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -53,26 +55,47 @@ export default function DashboardPage() {
 
   // 🧠 Update Profile
   async function handleUpdateProfile(e: React.FormEvent) {
-    e.preventDefault();
-    setStatusMessage(null);
+  e.preventDefault();
+  setStatusMessage(null);
 
-    if (!user) return;
+  if (!user || !profile) return;
 
-    const updatedProfile: any = {
+  const updatedProfile: any = {
+    weight: parseFloat(weight),
+    height: parseFloat(height),
+    goal,
+    goal_weight: goal === "maintain" ? null : parseFloat(goalWeight),
+  };
+
+  try {
+    // 1️⃣ Calculate and upsert mealplan macros
+    await calculateAndUpsertMealplan({
+      profile_id: profile.id, // from Profile table, not auth.user.id
       weight: parseFloat(weight),
       height: parseFloat(height),
-      goal,
-      goal_weight: goal === "maintain" ? null : parseFloat(goalWeight),
-    };
+      goal: goal as "weight_loss" | "muscle_gain" | "maintain",
+      goal_weight:
+        goal === "maintain" || goalWeight === ""
+          ? null
+          : parseFloat(goalWeight),
+    });
 
+    // 2️⃣ Update the Profile table
     const { error } = await supabase
       .from("Profile")
       .update(updatedProfile)
-      .eq("user_id", user.id);
+      .eq("id", profile.id); // always use Profile.id
 
-    if (error) setStatusMessage("❌ Failed to update profile");
-    else setStatusMessage("✅ Profile updated successfully!");
+    if (error) {
+      setStatusMessage("❌ Failed to update profile");
+    } else {
+      setStatusMessage("✅ Profile updated successfully!");
+    }
+  } catch (err: any) {
+    console.error("Error updating profile:", err);
+    setStatusMessage(`❌ ${err.message}`);
   }
+}
 
   // 🔐 Change Password
   async function handleChangePassword(e: React.FormEvent) {

@@ -12,16 +12,52 @@ export default function Header() {
     router.push("/login");
   }
 
+  async function handleMealPlanClick() {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      router.push("/login");
+      return;
+    }
+
+    // Get profile
+    const { data: profileData, error: profileError } = await supabase
+      .from("Profile")
+      .select("id")
+      .eq("user_id", userData.user.id)
+      .single();
+
+    if (profileError || !profileData) {
+      console.error(profileError);
+      alert("Profile not found");
+      return;
+    }
+
+    // Get user's mealplan
+    const { data: mealplanData, error: mealplanError } = await supabase
+      .from("mealplan")
+      .select("id")
+      .eq("profile_id", profileData.id)
+      .single();
+
+    if (mealplanError || !mealplanData) {
+      console.error(mealplanError);
+      alert("No meal plan found for your profile");
+      return;
+    }
+
+    // Navigate to mealplan page
+    router.push(`/mealplan/${mealplanData.id}`);
+  }
+
   const navItems = [
     { name: "Profile", path: "/dashboard" },
     { name: "Workout Routine", path: "/workout" },
-    { name: "Meal Plan", path: "/mealplan" },
+    { name: "Meal Plan", action: handleMealPlanClick }, // changed from path to action
     { name: "Explore", path: "/explore" },
   ];
 
   return (
     <header className="flex items-center justify-between bg-gray-800 text-[#EED0BB] px-10 py-4 shadow-md">
-      {/* Brand Name */}
       <h1
         className="text-2xl font-bold text-purple-900 cursor-pointer"
         onClick={() => router.push("/dashboard")}
@@ -29,12 +65,11 @@ export default function Header() {
         UNBOUND
       </h1>
 
-      {/* Navigation */}
       <nav className="flex space-x-8">
         {navItems.map((item) => (
           <button
             key={item.name}
-            onClick={() => router.push(item.path)}
+            onClick={item.action ? item.action : () => router.push(item.path)}
             className={`hover:text-purple-400 transition ${
               pathname === item.path ? "text-purple-400 font-semibold" : ""
             }`}
@@ -44,7 +79,6 @@ export default function Header() {
         ))}
       </nav>
 
-      {/* Logout */}
       <button
         onClick={handleLogout}
         className="bg-[#7F5977] text-[#EED0BB] px-4 py-2 rounded hover:bg-[#EED0BB] hover:text-gray-800 transition"

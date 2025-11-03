@@ -133,7 +133,7 @@ export default function FollowedWorkoutDetail() {
           <h1 className="text-3xl font-bold text-purple-900">
             {routine?.name || "Workout Routine"}
           </h1>
-          {/* 🟣 Unfollow Button */}
+          {/*  Unfollow Button */}
           <button
             onClick={handleUnfollow}
             className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition text-sm"
