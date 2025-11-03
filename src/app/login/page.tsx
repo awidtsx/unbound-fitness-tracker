@@ -32,6 +32,17 @@ export default function LoginPage() {
     fetchWorkouts()
   }, [])
 
+
+  useEffect(() => {
+  const checkSession = async () => {
+    const { data } = await supabase.auth.getSession()
+    if (data.session) {
+      router.push('/dashboard/profile')
+    }
+  }
+  checkSession()
+}, [router])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
