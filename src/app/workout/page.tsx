@@ -69,7 +69,6 @@ export default function WorkoutRoutinePage() {
       profile_id: profileId,
       name,
       description,
-      date_updated: new Date().toISOString(),
     };
 
     if (editRoutine) {
@@ -77,7 +76,7 @@ export default function WorkoutRoutinePage() {
     } else {
       await supabase.from("WorkoutRoutine").insert([data]);
     }
-
+    
     setName("");
     setDescription("");
     setEditRoutine(null);

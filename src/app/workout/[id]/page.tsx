@@ -14,7 +14,7 @@ export default function WorkoutDetail() {
   const [showModal, setShowModal] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [sets, setSets] = useState('')
+  const [set, setSets] = useState('')
   const [reps, setReps] = useState('')
   const [weight, setWeight] = useState('')
   const [loading, setLoading] = useState(true)
@@ -92,17 +92,18 @@ async function fetchRoutine() {
   // ✅ Add exercise
   async function addExercise(e: React.FormEvent) {
     e.preventDefault()
+    
     const { error } = await supabase.from('Exercises').insert([
       {
         routine_id: id,
         name,
         description,
-        sets: parseInt(sets),
+        set: parseInt(set),
         reps: parseInt(reps),
         weight: parseFloat(weight),
       },
     ])
-
+    
     if (error) console.error(error)
     else {
       setShowModal(false)
@@ -160,12 +161,12 @@ async function fetchRoutine() {
                         onChange={(e) =>
                           handleUpdate(
                             exercise.id,
-                            'sets',
+                            'set',
                             parseInt(e.target.value)
                           )
                         }
                         className="w-16 p-1 rounded bg-gray-700 text-gray-100 text-center border border-gray-600"
-                        placeholder="Sets"
+                        placeholder="Set"
                       />
                       <input
                         type="number"
@@ -240,9 +241,9 @@ async function fetchRoutine() {
               />
               <input
                 type="number"
-                placeholder="Sets"
+                placeholder="Set"
                 className="w-full p-2 rounded bg-gray-700 text-emerald-50 border border-stone-400/30 focus:border-purple-600 focus:outline-none"
-                value={sets}
+                value={set}
                 onChange={(e) => setSets(e.target.value)}
               />
               <input
