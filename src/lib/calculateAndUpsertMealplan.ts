@@ -4,7 +4,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
+// Using explicit typing here to ensure correct parameter types
 export async function calculateAndUpsertMealplan({
   profile_id,
   weight,
@@ -18,6 +18,7 @@ export async function calculateAndUpsertMealplan({
   goal: "weight_loss" | "muscle_gain" | "maintain";
   goal_weight: number | null;
 }) {
+  // Formula for macros calculation
   const age = 25;
   const BMR = 10 * weight + 6.25 * height - 5 * age + 5;
   const TDEE = BMR * 1.375;
@@ -28,21 +29,22 @@ export async function calculateAndUpsertMealplan({
 
   const goalProtein = Math.round(weight * 2);
   const goalFat = Math.round((0.25 * goalCalories) / 9);
-  const goalCarbs = Math.round((goalCalories - (goalProtein * 4 + goalFat * 9)) / 4);
+  const goalCarbs = Math.round(
+    (goalCalories - (goalProtein * 4 + goalFat * 9)) / 4
+  );
 
-
+  // Checking mealplan to determine whether to insert or update
   const { data: existing, error: fetchError } = await supabase
     .from("mealplan")
     .select("id")
     .eq("profile_id", profile_id)
     .single();
 
-  if (fetchError && fetchError.code !== "PGRST116") { 
+  if (fetchError && fetchError.code !== "PGRST116") {
     throw new Error(fetchError.message);
   }
-
+  // Update mealplan
   if (existing) {
-   
     const { error: updateError } = await supabase
       .from("mealplan")
       .update({
@@ -54,8 +56,9 @@ export async function calculateAndUpsertMealplan({
       .eq("id", existing.id);
 
     if (updateError) throw new Error(updateError.message);
-  } else {
-
+  }
+  // Insert mealplan
+  else {
     const { error: insertError } = await supabase.from("mealplan").insert([
       {
         profile_id,

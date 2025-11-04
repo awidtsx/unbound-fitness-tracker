@@ -15,7 +15,7 @@ export default function ExploreWorkoutDetail() {
   const [profileId, setProfileId] = useState<number | null>(null);
   const [isFollowed, setIsFollowed] = useState(false);
 
-  
+  // Check user session and get profile ID
   useEffect(() => {
     async function checkSession() {
       const { data: userData } = await supabase.auth.getUser();
@@ -24,7 +24,7 @@ export default function ExploreWorkoutDetail() {
         return;
       }
 
-      
+      // Select profile ID
       const { data: profileData } = await supabase
         .from('Profile')
         .select('id')
@@ -40,15 +40,16 @@ export default function ExploreWorkoutDetail() {
     checkSession();
   }, [router]);
 
-  
+  // Fetch routine and exercises
   async function fetchRoutine() {
   setLoading(true);
+  // Select the routine info
   const { data: routineData } = await supabase
     .from("WorkoutRoutine")
     .select("*")
     .eq("id", id)
     .single();
-
+// Select base exercises
   const { data: exerciseData } = await supabase
     .from("Exercises")
     .select("*")
@@ -66,10 +67,10 @@ useEffect(() => {
   init();
 }, [id, router]);
 
-  
+  // Handle Follow Routine
   async function handleFollow() {
     if (!profileId) return;
-
+    // Insert into routine_followers
     const { error } = await supabase.from('routine_followers').insert([
       {
         routine_id: id,

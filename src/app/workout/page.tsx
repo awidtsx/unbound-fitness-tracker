@@ -18,6 +18,7 @@ export default function WorkoutRoutinePage() {
   const [description, setDescription] = useState("");
   const [editRoutine, setEditRoutine] = useState<any | null>(null);
 
+  // Fetch profile ID and routines while also checking session
   useEffect(() => {
     async function fetchData() {
       const { data: userData } = await supabase.auth.getUser();
@@ -25,7 +26,7 @@ export default function WorkoutRoutinePage() {
         router.push("/login");
         return;
       }
-
+      // Select profile ID
       const { data: profile } = await supabase
         .from("Profile")
         .select("id")
@@ -35,7 +36,7 @@ export default function WorkoutRoutinePage() {
       if (!profile) return;
       setProfileId(profile.id);
 
-      // Fetch your own routines
+      // Select your own routines
       const { data: myData } = await supabase
         .from("WorkoutRoutine")
         .select("id, name, description, date_updated")
@@ -44,14 +45,17 @@ export default function WorkoutRoutinePage() {
 
       setMyRoutines(myData || []);
 
-      // Fetch followed routines
+      // Select followed routines
       const { data: followedData } = await supabase
         .from("routine_followers")
-        .select("routine_id, WorkoutRoutine(id, name, description, date_updated)")
+        .select(
+          "routine_id, WorkoutRoutine(id, name, description, date_updated)"
+        )
         .eq("follower_id", profile.id)
         .order("routine_id", { ascending: false });
 
-      const formattedFollowed = followedData?.map((f) => f.WorkoutRoutine) || [];
+      const formattedFollowed =
+        followedData?.map((f) => f.WorkoutRoutine) || [];
       setFollowedRoutines(formattedFollowed);
 
       setLoading(false);
@@ -64,35 +68,38 @@ export default function WorkoutRoutinePage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!profileId) return;
-
+    // Initialize data object for upsert logic
     const data = {
       profile_id: profileId,
       name,
       description,
     };
-
+    // Upsert Logic
     if (editRoutine) {
-      await supabase.from("WorkoutRoutine").update(data).eq("id", editRoutine.id);
+      await supabase
+        .from("WorkoutRoutine")
+        .update(data)
+        .eq("id", editRoutine.id);
     } else {
       await supabase.from("WorkoutRoutine").insert([data]);
     }
-    
+
     setName("");
     setDescription("");
     setEditRoutine(null);
     setShowModal(false);
     fetchRoutines();
   }
-
+  // Fetch routines function
   async function fetchRoutines() {
     if (!profileId) return;
-
+    // Select my routines
     const { data: myData } = await supabase
       .from("WorkoutRoutine")
       .select("id, name, description, date_updated")
       .eq("profile_id", profileId)
       .order("date_updated", { ascending: false });
-
+    // Select followed routines
     const { data: followedData } = await supabase
       .from("routine_followers")
       .select("routine_id, WorkoutRoutine(id, name, description, date_updated)")
@@ -106,7 +113,7 @@ export default function WorkoutRoutinePage() {
   // Unfollow function
   async function handleUnfollow(routineId: number) {
     if (!profileId) return;
-
+    // Delete from routine_followers
     const { error } = await supabase
       .from("routine_followers")
       .delete()
@@ -119,9 +126,7 @@ export default function WorkoutRoutinePage() {
     }
 
     // Instantly update the UI
-    setFollowedRoutines((prev) =>
-      prev.filter((r) => r.id !== routineId)
-    );
+    setFollowedRoutines((prev) => prev.filter((r) => r.id !== routineId));
   }
 
   async function handleDelete(id: number) {
@@ -143,7 +148,7 @@ export default function WorkoutRoutinePage() {
                 My Workout Routines
               </h1>
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => setShowModal(true) /*open Modal*/}
                 className="bg-[#7F5977] text-white px-4 py-2 rounded hover:bg-[#EED0BB] transition"
               >
                 + Add Routine
@@ -171,6 +176,7 @@ export default function WorkoutRoutinePage() {
                     <div className="flex space-x-3">
                       <button
                         onClick={(e) => {
+                          /* Passes the value to the Modal, while also setting it to not null to declare that it is for Editing */
                           e.stopPropagation();
                           setEditRoutine(routine);
                           setName(routine.name);
@@ -215,7 +221,9 @@ export default function WorkoutRoutinePage() {
                   <li
                     key={routine.id}
                     className="flex justify-between items-center border border-emerald-50 rounded-lg px-4 py-3 hover:bg-emerald-50 transition cursor-pointer"
-                    onClick={() => router.push(`/workout/followed/${routine.id}`)}
+                    onClick={() =>
+                      router.push(`/workout/followed/${routine.id}`)
+                    }
                   >
                     <div>
                       <h3 className="text-lg font-semibold text-purple-900">

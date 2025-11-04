@@ -1,25 +1,27 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabaseClient'
-import { useParams } from 'next/navigation'
-import { useRouter } from 'next/navigation';
-import Header from '../../components/Header'
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import Header from "../../components/Header";
 
 export default function WorkoutDetail() {
   const router = useRouter();
-  const { id } = useParams() // get the workout routine id from the URL
-  const [routine, setRoutine] = useState<any>(null)
-  const [exercises, setExercises] = useState<any[]>([])
-  const [showModal, setShowModal] = useState(false)
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [set, setSets] = useState('')
-  const [reps, setReps] = useState('')
-  const [weight, setWeight] = useState('')
-  const [loading, setLoading] = useState(true)
+  const { id } = useParams(); // get the workout routine id from the URL
+  const [routine, setRoutine] = useState<any>(null);
+  const [exercises, setExercises] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
 
+  // Editable fields
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [set, setSets] = useState("");
+  const [reps, setReps] = useState("");
+  const [weight, setWeight] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  // Check session
   useEffect(() => {
     async function checkSesh() {
       const { data: userData } = await supabase.auth.getUser();
@@ -27,73 +29,72 @@ export default function WorkoutDetail() {
         router.push("/login");
         return;
       }
-
-      
     }
 
     checkSesh();
   }, [router]);
 
-async function fetchRoutine() {
-    setLoading(true)
-
+  // Fetch routine and exercises
+  async function fetchRoutine() {
+    setLoading(true);
+    // Select routine details
     const { data: routineData, error: routineError } = await supabase
-      .from('WorkoutRoutine')
-      .select('*')
-      .eq('id', id)
-      .single()
+      .from("WorkoutRoutine")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (routineError) console.error(routineError)
-
+    if (routineError) console.error(routineError);
+    // Select exercises for the routine
     const { data: exerciseData, error: exerciseError } = await supabase
-      .from('Exercises')
-      .select('*')
-      .eq('routine_id', id)
-      .order('id', { ascending: true })
+      .from("Exercises")
+      .select("*")
+      .eq("routine_id", id)
+      .order("id", { ascending: true });
 
-    if (exerciseError) console.error(exerciseError)
+    if (exerciseError) console.error(exerciseError);
 
-    setRoutine(routineData)
-    setExercises(exerciseData || [])
-    setLoading(false)
+    setRoutine(routineData);
+    setExercises(exerciseData || []);
+    setLoading(false);
   }
 
   //  Fetch routine and exercises
   useEffect(() => {
-    if (!id) return
-    fetchRoutine()
-  }, [id])
-
-  
+    if (!id) return;
+    fetchRoutine();
+  }, [id]);
 
   //  Update exercise values
   async function handleUpdate(exerciseId: number, field: string, value: any) {
+    // Update table Exercises
     const { error } = await supabase
-      .from('Exercises')
+      .from("Exercises")
       .update({ [field]: value })
-      .eq('id', exerciseId)
+      .eq("id", exerciseId);
 
-    if (error) console.error(error)
-    else fetchRoutine()
+    if (error) console.error(error);
+    else fetchRoutine();
   }
 
-  // ✅ Delete exercise
+  // Delete exercise
   async function handleDelete(exerciseId: number) {
-    if (!confirm('Are you sure you want to delete this exercise?')) return
+    if (!confirm("Are you sure you want to delete this exercise?")) return;
+    // Delete from Exercises table
     const { error } = await supabase
-      .from('Exercises')
+      .from("Exercises")
       .delete()
-      .eq('id', exerciseId)
+      .eq("id", exerciseId);
 
-    if (error) console.error(error)
-    else fetchRoutine()
+    if (error) console.error(error);
+    else fetchRoutine();
   }
 
-  // ✅ Add exercise
+  // Add exercise
   async function addExercise(e: React.FormEvent) {
-    e.preventDefault()
-    
-    const { error } = await supabase.from('Exercises').insert([
+    e.preventDefault();
+    // Insert into Exercises table
+    const { error } = await supabase.from("Exercises").insert([
       {
         routine_id: id,
         name,
@@ -102,17 +103,17 @@ async function fetchRoutine() {
         reps: parseInt(reps),
         weight: parseFloat(weight),
       },
-    ])
-    
-    if (error) console.error(error)
+    ]);
+
+    if (error) console.error(error);
     else {
-      setShowModal(false)
-      setName('')
-      setDescription('')
-      setSets('')
-      setReps('')
-      setWeight('')
-      fetchRoutine()
+      setShowModal(false);
+      setName("");
+      setDescription("");
+      setSets("");
+      setReps("");
+      setWeight("");
+      fetchRoutine();
     }
   }
 
@@ -122,9 +123,11 @@ async function fetchRoutine() {
 
       <section className="max-w-3xl mx-auto mt-10 bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-purple-900">{routine?.name}</h1>
+          <h1 className="text-3xl font-bold text-purple-900">
+            {routine?.name}
+          </h1>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => setShowModal(true) /* Open modal */}
             className="bg-[#7F5977] text-white px-4 py-2 rounded hover:bg-[#EED0BB] hover:text-gray-800 transition"
           >
             + Add Exercise
@@ -135,7 +138,6 @@ async function fetchRoutine() {
           <p>Loading...</p>
         ) : (
           <>
-            
             <p className="text-gray-400 mb-6">{routine?.description}</p>
 
             {/* Exercise List */}
@@ -155,13 +157,14 @@ async function fetchRoutine() {
                       </p>
                     </div>
                     <div className="flex items-center space-x-3">
+                      {/* Editable fields for set, reps, weight */}
                       <input
                         type="number"
-                        value={exercise.set || ''}
+                        value={exercise.set || ""}
                         onChange={(e) =>
                           handleUpdate(
                             exercise.id,
-                            'set',
+                            "set",
                             parseInt(e.target.value)
                           )
                         }
@@ -170,11 +173,11 @@ async function fetchRoutine() {
                       />
                       <input
                         type="number"
-                        value={exercise.reps || ''}
+                        value={exercise.reps || ""}
                         onChange={(e) =>
                           handleUpdate(
                             exercise.id,
-                            'reps',
+                            "reps",
                             parseInt(e.target.value)
                           )
                         }
@@ -183,11 +186,11 @@ async function fetchRoutine() {
                       />
                       <input
                         type="number"
-                        value={exercise.weight || ''}
+                        value={exercise.weight || ""}
                         onChange={(e) =>
                           handleUpdate(
                             exercise.id,
-                            'weight',
+                            "weight",
                             parseFloat(e.target.value)
                           )
                         }
@@ -211,12 +214,12 @@ async function fetchRoutine() {
         )}
       </section>
 
-      {/* ✅ ADD EXERCISE MODAL */}
+      {/* Modal */}
       {showModal && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowModal(false)
+            if (e.target === e.currentTarget) setShowModal(false);
           }}
         >
           <div className="bg-[#7F5977] p-6 rounded-xl shadow-lg w-96">
@@ -281,5 +284,5 @@ async function fetchRoutine() {
         </div>
       )}
     </main>
-  )
+  );
 }

@@ -14,7 +14,7 @@ export default function ExplorePage() {
   
 
 
-
+//  Check user session and fetch workouts
   useEffect(() => {
     async function fetchWorkouts() {
       setLoading(true);
@@ -36,7 +36,7 @@ export default function ExplorePage() {
       if (!profileData) return;
       setProfileId(profileData.id);
 
-      // Get routines already followed by this user
+      // Select routines already followed by this user
       const { data: followed } = await supabase
         .from("routine_followers")
         .select("routine_id")
@@ -44,7 +44,7 @@ export default function ExplorePage() {
 
       const followedIds = followed?.map((f) => f.routine_id) || [];
 
-      // Fetch all workout routines excluding user's and followed ones
+      // Select workout routines using view excluding those created by the user and those already followed
       const { data, error } = await supabase
         .from("workout_routines_with_followers")
         .select(
@@ -77,7 +77,7 @@ export default function ExplorePage() {
 
     const routineIndex = workouts.findIndex((r) => r.id === routineId);
     if (routineIndex === -1) return;
-
+    // Insert into routine_followers
     const { error } = await supabase.from("routine_followers").insert([
       {
         follower_id: profileId,
@@ -91,7 +91,7 @@ export default function ExplorePage() {
       return;
     }
 
-    // ✅ Instantly update UI (increment follower count and disable button)
+    // Instantly update UI (increment follower count and disable button)
     const updated = [...workouts];
     updated[routineIndex].follower_count += 1;
     updated[routineIndex].isFollowed = true;

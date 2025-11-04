@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import Header from "../components/Header";
 import { calculateAndUpsertMealplan } from "@/lib/calculateAndUpsertMealplan";
 
-
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -21,6 +20,7 @@ export default function DashboardPage() {
   const [goalWeight, setGoalWeight] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  // Get user profile and checking session
   useEffect(() => {
     async function fetchProfile() {
       setLoading(true);
@@ -53,51 +53,52 @@ export default function DashboardPage() {
     fetchProfile();
   }, [router]);
 
-  // 🧠 Update Profile
+  // Update Profile while also calculating/upserting mealplan
   async function handleUpdateProfile(e: React.FormEvent) {
-  e.preventDefault();
-  setStatusMessage(null);
+    e.preventDefault();
+    setStatusMessage(null);
 
-  if (!user || !profile) return;
+    if (!user || !profile) return; // stop function if null
 
-  const updatedProfile: any = {
-    weight: parseFloat(weight),
-    height: parseFloat(height),
-    goal,
-    goal_weight: goal === "maintain" ? null : parseFloat(goalWeight),
-  };
-
-  try {
-    // 1️⃣ Calculate and upsert mealplan macros
-    await calculateAndUpsertMealplan({
-      profile_id: profile.id, // from Profile table, not auth.user.id
+    // Object to hold updated fields
+    const updatedProfile: any = {
       weight: parseFloat(weight),
       height: parseFloat(height),
-      goal: goal as "weight_loss" | "muscle_gain" | "maintain",
-      goal_weight:
-        goal === "maintain" || goalWeight === ""
-          ? null
-          : parseFloat(goalWeight),
-    });
+      goal,
+      goal_weight: goal === "maintain" ? null : parseFloat(goalWeight),
+    };
 
-    // 2️⃣ Update the Profile table
-    const { error } = await supabase
-      .from("Profile")
-      .update(updatedProfile)
-      .eq("id", profile.id); // always use Profile.id
+    try {
+      // Calculate and upsert mealplan macros
+      await calculateAndUpsertMealplan({
+        profile_id: profile.id,
+        weight: parseFloat(weight),
+        height: parseFloat(height),
+        goal: goal as "weight_loss" | "muscle_gain" | "maintain",
+        goal_weight:
+          goal === "maintain" || goalWeight === ""
+            ? null
+            : parseFloat(goalWeight),
+      });
 
-    if (error) {
-      setStatusMessage("❌ Failed to update profile");
-    } else {
-      setStatusMessage("✅ Profile updated successfully!");
+      // Update the Profile table
+      const { error } = await supabase
+        .from("Profile")
+        .update(updatedProfile)
+        .eq("id", profile.id);
+
+      if (error) {
+        setStatusMessage("❌ Failed to update profile");
+      } else {
+        setStatusMessage("✅ Profile updated successfully!");
+      }
+    } catch (err: any) {
+      console.error("Error updating profile:", err);
+      setStatusMessage(`❌ ${err.message}`);
     }
-  } catch (err: any) {
-    console.error("Error updating profile:", err);
-    setStatusMessage(`❌ ${err.message}`);
   }
-}
 
-  // 🔐 Change Password
+  // Change Password
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     setStatusMessage(null);
@@ -130,7 +131,7 @@ export default function DashboardPage() {
 
         {profile ? (
           <>
-            {/* Basic Info */}
+            {/* Basic Info, cannot be edited */}
             <div className="mb-6">
               <p>
                 <span className="font-semibold text-[#EED0BB]">Name:</span>{" "}
@@ -185,7 +186,7 @@ export default function DashboardPage() {
                 </select>
               </div>
 
-              {/* 👇 Goal Weight (only if goal ≠ maintain) */}
+              {/* Goal Weight (only if goal is not maintain) */}
               {goal !== "maintain" && (
                 <div>
                   <label className="block text-sm font-medium text-[#EED0BB] mb-1">

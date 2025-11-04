@@ -11,7 +11,7 @@ export default function MealPlanPage() {
   const [foods, setFoods] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal & form state
+  // Modal & editable fields
   const [showModal, setShowModal] = useState(false);
   const [foodName, setFoodName] = useState("");
   const [protein, setProtein] = useState("");
@@ -20,18 +20,20 @@ export default function MealPlanPage() {
   const [calories, setCalories] = useState("");
   const [amount, setAmount] = useState("");
 
+
+  // Get Meal Plan
   async function fetchMealplan() {
     setLoading(true);
-
+    // Select corresponding meal plan info
     const { data: mealplanData, error: mealplanError } = await supabase
       .from("mealplan")
       .select("*")
       .eq("id", id)
       .single();
-
+    
     if (mealplanError) console.error(mealplanError);
     else setMealplan(mealplanData);
-
+    // Select foods under this mealplan
     const { data: foodData, error: foodError } = await supabase
       .from("food")
       .select("*")
@@ -48,10 +50,10 @@ export default function MealPlanPage() {
     fetchMealplan();
   }, [id]);
 
-  
+  // Add Food
   async function handleAddFood(e: React.FormEvent) {
     e.preventDefault();
-
+    // Insert new food item
     const { error } = await supabase.from("food").insert([
       {
         mealplan_id: id,
@@ -77,8 +79,9 @@ export default function MealPlanPage() {
     }
   }
 
-  
+  // Update Food
   async function handleUpdateFood(foodId: number, field: string, value: any) {
+    // Update food item
     const { error } = await supabase
       .from("food")
       .update({ [field]: value })
@@ -88,9 +91,10 @@ export default function MealPlanPage() {
     else fetchMealplan(); 
   }
 
-  
+  // Delete Food
   async function handleDeleteFood(foodId: number) {
     if (!confirm("Are you sure you want to delete this food?")) return;
+    // Delete food item
     const { error } = await supabase.from("food").delete().eq("id", foodId);
 
     if (error) console.error(error);
@@ -114,7 +118,7 @@ export default function MealPlanPage() {
           Meal Plan
         </h1>
 
-       
+       { /* Macros */ }
         <div className="mb-6 grid grid-cols-2 gap-4">
           <div className="bg-gray-700 p-4 rounded">
             <h3 className="font-semibold text-purple-300 mb-2">Goal Macros</h3>
@@ -134,7 +138,7 @@ export default function MealPlanPage() {
 
        
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowModal(true) /* Open Modal */}
           className="mb-4 px-4 py-2 bg-[#7F5977] rounded hover:bg-[#EED0BB] hover:text-gray-800 transition"
         >
           + Add Food
@@ -151,6 +155,7 @@ export default function MealPlanPage() {
                 <div className="flex-1">
                   <p className="font-semibold text-purple-300">{food.name}</p>
                   <div className="flex space-x-2 mt-1">
+                    { /* Editable fields for food */ }
                     <input
                       type="number"
                       value={food.amount || 1}
@@ -212,7 +217,7 @@ export default function MealPlanPage() {
         </div>
       </section>
 
-      
+      { /* Add food Modal */ }
       {showModal && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center"

@@ -14,7 +14,7 @@ export default function FollowedWorkoutDetail() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<number | null>(null);
-
+  // Check user session
   useEffect(() => {
     async function checkSesh() {
       const { data: userData } = await supabase.auth.getUser();
@@ -27,7 +27,9 @@ export default function FollowedWorkoutDetail() {
     checkSesh();
   }, [router]);
 
+  // Get user profile
   async function getUserProfile(userId: string) {
+    // Select profile ID
     const { data: profile } = await supabase
       .from("Profile")
       .select("id")
@@ -44,23 +46,24 @@ export default function FollowedWorkoutDetail() {
     if (id && userId) fetchRoutine();
   }, [id, userId]);
 
+  // Get routine details
   async function fetchRoutine() {
     setLoading(true);
 
-    // Get the routine info
+    // Select the routine info
     const { data: routineData } = await supabase
       .from("WorkoutRoutine")
       .select("*")
       .eq("id", id)
       .single();
 
-    // Get base exercises
+    // Select base exercises
     const { data: exerciseData } = await supabase
       .from("Exercises")
       .select("*")
       .eq("routine_id", id);
 
-    // Get any custom values user may have saved before
+    // Select any custom values user may have saved before
     const { data: followedData } = await supabase
       .from("FollowedExercises")
       .select("*")
@@ -82,7 +85,11 @@ export default function FollowedWorkoutDetail() {
     setLoading(false);
   }
 
-  async function handleCustomUpdate(exerciseId: number, field: string, value: any) {
+  async function handleCustomUpdate(
+    exerciseId: number,
+    field: string,
+    value: any
+  ) {
     if (!userId) return;
 
     const updateFieldMap: any = {
@@ -106,10 +113,10 @@ export default function FollowedWorkoutDetail() {
     );
   }
 
-  // 🟣 NEW: Unfollow Routine
+  // Unfollow Routine
   async function handleUnfollow() {
     if (!profileId) return;
-
+    // Delete from routine_followers
     const { error } = await supabase
       .from("routine_followers")
       .delete()
@@ -165,6 +172,7 @@ export default function FollowedWorkoutDetail() {
                       </p>
                     </div>
                     <div className="flex items-center space-x-3">
+                      {/* Editable fields for set, reps, weight */}
                       <input
                         type="number"
                         value={exercise.custom_sets || ""}

@@ -1,27 +1,26 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabaseClient"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 import { calculateAndUpsertMealplan } from "@/lib/calculateAndUpsertMealplan";
 
-
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLogin, setIsLogin] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [workouts, setWorkouts] = useState<any[]>([])
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLogin, setIsLogin] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [workouts, setWorkouts] = useState<any[]>([]);
+  // Editable fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
+  const [goal, setGoal] = useState("weight_loss");
+  const [goalWeight, setGoalWeight] = useState(""); // ✅ new state
 
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [weight, setWeight] = useState("")
-  const [height, setHeight] = useState("")
-  const [goal, setGoal] = useState("weight_loss")
-  const [goalWeight, setGoalWeight] = useState("") // ✅ new state
-
-  // Fetch top workouts
+  // Fetch top 5 workouts depending on followers and recent updates
   useEffect(() => {
     async function fetchWorkouts() {
       const { data, error } = await supabase
@@ -29,87 +28,89 @@ export default function LoginPage() {
         .select("id, name, description")
         .order("follower_count", { ascending: false })
         .order("date_updated", { ascending: false })
-        .limit(5)
-      if (error) console.error(error)
-      else setWorkouts(data || [])
+        .limit(5);
+      if (error) console.error(error);
+      else setWorkouts(data || []);
     }
-    fetchWorkouts()
-  }, [])
+    fetchWorkouts();
+  }, []);
 
   // Check if user already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
+      const { data } = await supabase.auth.getSession();
       if (data.session) {
-        router.push("/dashboard")
+        router.push("/dashboard");
       }
-    }
-    checkSession()
-  }, [router])
+    };
+    checkSession();
+  }, [router]);
 
+  // Handle form submission for Login/Sign Up
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
     try {
-      let result
+      let result;
 
       if (isLogin) {
-        // LOGIN flow
-        result = await supabase.auth.signInWithPassword({ email, password })
+        // LOGIN flow, using Supabase Auth
+        result = await supabase.auth.signInWithPassword({ email, password });
 
-        if (result.error) throw result.error
-        router.push("/dashboard")
+        if (result.error) throw result.error;
+        router.push("/dashboard");
       } else {
-        // SIGN UP flow
-        result = await supabase.auth.signUp({ email, password })
+        // SIGN UP flow, using Supabase Auth
+        result = await supabase.auth.signUp({ email, password });
 
-        if (result.error) throw result.error
+        if (result.error) throw result.error;
 
         // If sign-up succeeds, insert profile data
-        const userId = result.data.user?.id
+        const userId = result.data.user?.id;
         if (userId) {
-          const { data: profileData, error: profileError } = await supabase.from("Profile").insert([
-            {
-              user_id: userId,
-              first_name: firstName,
-              last_name: lastName,
-              weight: parseFloat(weight),
-              height: parseFloat(height),
-              goal: goal,
-              goal_weight:
-                goal === "maintain" || goalWeight === ""
-                  ? null
-                  : parseFloat(goalWeight), // ✅ conditional insert
-            },
-          ])
-          .select()
-      .single();
+          const { data: profileData, error: profileError } = await supabase
+            .from("Profile")
+            .insert([
+              {
+                user_id: userId,
+                first_name: firstName,
+                last_name: lastName,
+                weight: parseFloat(weight),
+                height: parseFloat(height),
+                goal: goal,
+                goal_weight:
+                  goal === "maintain" || goalWeight === ""
+                    ? null
+                    : parseFloat(goalWeight), // ✅ conditional insert
+              },
+            ])
+            .select()
+            .single();
 
-      const profileId = profileData.id;
-        await calculateAndUpsertMealplan({
-      profile_id: profileId,
-      weight: parseFloat(weight),
-      height: parseFloat(height),
-      goal: goal as "weight_loss" | "muscle_gain" | "maintain",
-      goal_weight:
-        goal === "maintain" || goalWeight === ""
-          ? null
-          : parseFloat(goalWeight),
-    });
-    
+          // Calculate and upsert mealplan after profile creation, call lib/calculateAndUpsertMealplan.ts
+          const profileId = profileData.id;
+          await calculateAndUpsertMealplan({
+            profile_id: profileId,
+            weight: parseFloat(weight),
+            height: parseFloat(height),
+            goal: goal as "weight_loss" | "muscle_gain" | "maintain",
+            goal_weight:
+              goal === "maintain" || goalWeight === ""
+                ? null
+                : parseFloat(goalWeight),
+          });
+
           if (profileError) throw profileError;
         }
-         
-
 
         alert(
           "A confirmation email has been sent. Please verify your email before logging in."
-        )
-        router.push("/login")
+        );
+        router.push("/login");
       }
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message);
     }
   }
 
@@ -212,7 +213,7 @@ export default function LoginPage() {
                 <option value="maintain">Maintain</option>
               </select>
 
-              {/* ✅ Conditional Goal Weight input */}
+              {/* Conditional Goal Weight input */}
               {(goal === "weight_loss" || goal === "muscle_gain") && (
                 <input
                   type="number"
@@ -235,7 +236,7 @@ export default function LoginPage() {
           >
             {isLogin ? "Log In" : "Sign Up"}
           </button>
-
+          {/* Tenary operator onClick to determine if user is Logging in or Creating account */}
           <p
             onClick={() => setIsLogin(!isLogin)}
             className="text-sm text-center mt-3 text-[#EED0BB] cursor-pointer hover:underline"
@@ -247,5 +248,5 @@ export default function LoginPage() {
         </form>
       </section>
     </main>
-  )
+  );
 }

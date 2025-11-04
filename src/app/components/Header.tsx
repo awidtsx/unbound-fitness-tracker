@@ -7,11 +7,13 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Logout function
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
   }
 
+  // Get userdata for mealplan navigation
   async function handleMealPlanClick() {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
@@ -48,7 +50,7 @@ export default function Header() {
     // Navigate to mealplan page
     router.push(`/mealplan/${mealplanData.id}`);
   }
-
+  // Header components
   const navItems = [
     { name: "Profile", path: "/dashboard" },
     { name: "Workout Routine", path: "/workout" },
@@ -64,7 +66,7 @@ export default function Header() {
       >
         UNBOUND
       </h1>
-
+      { /* Menu items */ }
       <nav className="flex space-x-8">
         {navItems.map((item) => (
           <button
@@ -78,7 +80,7 @@ export default function Header() {
           </button>
         ))}
       </nav>
-
+      { /* Logout Button */ }
       <button
         onClick={handleLogout}
         className="bg-[#7F5977] text-[#EED0BB] px-4 py-2 rounded hover:bg-[#EED0BB] hover:text-gray-800 transition"
